@@ -21,8 +21,9 @@ public class ClienteCorporativo extends Cliente
 		this.tamanoEmpresa = tamanoEmpresa;
 	}
 	
-	
-	
+
+
+
 	public String getNombreEmpresa() {
 		return nombreEmpresa;
 	}
@@ -38,13 +39,14 @@ public class ClienteCorporativo extends Cliente
 	@Override
 	public String getTipoCliente() {
 		// TODO Auto-generated method stub
-		return null;
+		return CORPORATIVO;
 	}
 
+	
 	@Override
 	public String getIdentificador() {
 		// TODO Auto-generated method stub
-		return null;
+		return nombreEmpresa;
 	}
     
 

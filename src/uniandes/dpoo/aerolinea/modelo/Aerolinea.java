@@ -1,8 +1,12 @@
 package uniandes.dpoo.aerolinea.modelo;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -12,6 +16,11 @@ import java.util.Map;
 import uniandes.dpoo.aerolinea.exceptions.InformacionInconsistenteException;
 import uniandes.dpoo.aerolinea.exceptions.VueloSobrevendidoException;
 import uniandes.dpoo.aerolinea.modelo.cliente.Cliente;
+import uniandes.dpoo.aerolinea.modelo.cliente.ClienteCorporativo;
+import uniandes.dpoo.aerolinea.modelo.cliente.ClienteNatural;
+import uniandes.dpoo.aerolinea.modelo.tarifas.CalculadoraTarifas;
+import uniandes.dpoo.aerolinea.modelo.tarifas.CalculadoraTarifasTemporadaAlta;
+import uniandes.dpoo.aerolinea.modelo.tarifas.CalculadoraTarifasTemporadaBaja;
 import uniandes.dpoo.aerolinea.persistencia.CentralPersistencia;
 import uniandes.dpoo.aerolinea.persistencia.IPersistenciaAerolinea;
 import uniandes.dpoo.aerolinea.persistencia.IPersistenciaTiquetes;
@@ -88,6 +97,11 @@ public class Aerolinea
     {
         this.aviones.add( avion );
     }
+    
+    public void agregarVuelo( Vuelo vuelo )
+    {
+        this.vuelos.add( vuelo );
+    }
 
     /**
      * Agrega un nuevo cliente a la aerolínea
@@ -163,7 +177,12 @@ public class Aerolinea
      */
     public Vuelo getVuelo( String codigoRuta, String fechaVuelo )
     {
-        // TODO implementar
+    	for(Vuelo vuelo: vuelos) {
+    		if (vuelo.getFecha().equals(fechaVuelo) && vuelo.getRuta().getCodigoRuta().equals(codigoRuta) ){
+    			return vuelo;
+    		}
+
+    	}
         return null;
     }
 
@@ -182,8 +201,14 @@ public class Aerolinea
      */
     public Collection<Tiquete> getTiquetes( )
     {
-        // TODO implementar
-        return null;
+    	Collection<Tiquete> tiquetesAerolinea = new ArrayList<Tiquete>();
+        for (Vuelo vuelo: vuelos) {
+        	 Collection<Tiquete> tiquetesVuelo =  vuelo.getTiquetes().values();
+        	 tiquetesAerolinea.addAll(tiquetesVuelo);
+        	 
+        }
+    	
+    	return tiquetesAerolinea;
 
     }
 
@@ -203,7 +228,8 @@ public class Aerolinea
      */
     public void cargarAerolinea( String archivo, String tipoArchivo ) throws TipoInvalidoException, IOException, InformacionInconsistenteException
     {
-        // TODO implementar
+        IPersistenciaAerolinea cargador = CentralPersistencia.getPersistenciaAerolinea( tipoArchivo );
+        cargador.cargarAerolinea( archivo, this );
     }
 
     /**
@@ -215,7 +241,8 @@ public class Aerolinea
      */
     public void salvarAerolinea( String archivo, String tipoArchivo ) throws TipoInvalidoException, IOException
     {
-        // TODO implementar
+        IPersistenciaAerolinea cargador = CentralPersistencia.getPersistenciaAerolinea( tipoArchivo );
+        cargador.salvarAerolinea( archivo, this );
     }
 
     /**
@@ -265,8 +292,28 @@ public class Aerolinea
      */
     public void programarVuelo( String fecha, String codigoRuta, String nombreAvion ) throws Exception
     {
-        // TODO Implementar el método
+    	boolean condition = true;
+        for(Vuelo vuelo:vuelos) {
+        	if ( (vuelo.getFecha().equals(fecha))&& (vuelo.getRuta().getCodigoRuta().equals(codigoRuta)) && (vuelo.getAvion().getNombre().equals(nombreAvion)) ) {
+        		condition = false;
+        		throw new Exception("El avión ya está programado para otro vuelo en la misma fecha.");
+        }
+        Avion newAvion = null;
+        if (condition){
+        	for(Avion avion: aviones) {
+        		if (avion.getNombre().equals(nombreAvion)){
+        			newAvion = avion;
+        		}
+        	}
+        	
+        	
+        }
+        	Ruta newRuta = rutas.get(codigoRuta);
+        	vuelos.add(new Vuelo( newRuta,  fecha, newAvion));
+        }
+    	
     }
+    
 
     /**
      * Vende una cierta cantidad de tiquetes para un vuelo, verificando que la información sea correcta.
@@ -283,21 +330,76 @@ public class Aerolinea
      * @throws VueloSobrevendidoException Se lanza esta excepción si no hay suficiente espacio en el vuelo para todos los pasajeros
      * @throws Exception Se lanza esta excepción para indicar que no se pudieron vender los tiquetes por algún otro motivo
      */
-    public int venderTiquetes( String identificadorCliente, String fecha, String codigoRuta, int cantidad ) throws VueloSobrevendidoException, Exception
-    {
-        // TODO Implementar el método
-        return -1;
+    public int venderTiquetes(String identificadorCliente, String fecha, String codigoRuta, int cantidad) throws VueloSobrevendidoException, Exception {
+        
+        // Verifica si hay un vuelo para la ruta y fecha deseada.
+        Vuelo vueloSeleccionado = null;
+        boolean vueloEncontrado = false; // Variable para verificar si se encontró un vuelo válido
+        for (Vuelo vuelo : vuelos) {
+            if (vuelo.getRuta().getCodigoRuta().equals(codigoRuta) && vuelo.getFecha().equals(fecha)) {
+                vueloSeleccionado = vuelo;
+                vueloEncontrado = true; // Se encontró un vuelo válido
+                break; // No es necesario seguir buscando
+            }
+        }
+        // Verifica si se encontró un vuelo válido
+        if (!vueloEncontrado) {
+            throw new Exception("No hay vuelos disponibles");
+        }
+        // verifica si hay suficientes tiquetes disponibles
+        int capacidadDisponible = vueloSeleccionado.getAvion().getCapacidad() - vueloSeleccionado.getTiquetes().size();
+        if (cantidad > capacidadDisponible) {
+            throw new VueloSobrevendidoException(vueloSeleccionado);
+        }
+        
+        //verifica si es temporada baja
+        SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd");
+        Date fechaFormat = formato.parse(fecha);
+        boolean temporadaBaja = esTemporadaBaja(fechaFormat);
+        //Calcula la tarifa.
+        CalculadoraTarifas calcualdora = temporadaBaja ? new CalculadoraTarifasTemporadaBaja() : new CalculadoraTarifasTemporadaAlta(); 
+        Cliente cliente = clientes.get(identificadorCliente);
+        int tarifaTotal = vueloSeleccionado.venderTicketes(cliente, calcualdora, cantidad);
+        
+        return tarifaTotal; 
     }
-
+        
     /**
+     * Este metodo verifica si la fecha esta en temporada baja o alta.
+     * @param fecha
+     * @return Booleano: true si es tmporada baja.
+     */
+    private boolean esTemporadaBaja(Date fecha) {
+        Calendar calendario = Calendar.getInstance();
+        calendario.setTime(fecha);
+        int mes = calendario.get(Calendar.MONTH) + 1;
+
+        return (mes >= 1 && mes <= 5) || (mes >= 9 && mes <= 11);
+	}
+
+	/**
      * Registra que un cierto vuelo fue realizado
      * @param fecha La fecha del vuelo
      * @param codigoRuta El código de la ruta que recorrió el vuelo
      */
-    public void registrarVueloRealizado( String fecha, String codigoRuta )
-    {
-        // TODO Implementar el método
+    public void registrarVueloRealizado(String fecha, String codigoRuta) {
+        Vuelo vueloSeleccionado = null;
+        boolean vueloEncontrado = false;
+        int i = 0;
+        for (Vuelo vuelo : vuelos) {
+            if (vuelo.getRuta().getCodigoRuta().equals(codigoRuta) && vuelo.getFecha().equals(fecha)) {
+                vueloSeleccionado = vuelo;
+                vueloEncontrado = true; 
+                break;
+            }
+            i++;
+        }
+
+        if (vueloEncontrado) {
+            vuelos.remove(i);
+        }
     }
+
 
     /**
      * Calcula cuánto valen los tiquetes que ya compró un cliente dado y que todavía no ha utilizado
@@ -306,8 +408,10 @@ public class Aerolinea
      */
     public String consultarSaldoPendienteCliente( String identificadorCliente )
     {
-        // TODO Implementar el método
-        return "";
+    	Cliente cliente = clientes.get(identificadorCliente);
+    	int sumaTotal = cliente.calcularValorTotalTiquetes();
+    	
+        return String.valueOf(sumaTotal);
     }
 
 }

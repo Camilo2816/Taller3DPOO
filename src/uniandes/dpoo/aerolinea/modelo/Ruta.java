@@ -5,8 +5,6 @@ package uniandes.dpoo.aerolinea.modelo;
  */
 public class Ruta
 {
-    // TODO completar
-
 	private String horaSalida;
 	private String horaLlegada;
 	private String codigoRuta;
@@ -54,10 +52,13 @@ public class Ruta
 	}
 	
 	public Integer getDuracion() {
-		return -1;
+		int newhoraSalida = getHoras(horaSalida)* 60 + getMinutos(horaSalida);
+		int newhoraLLegada = getHoras(horaLlegada)* 60 + getMinutos(horaLlegada);
+		
+		return newhoraLLegada - newhoraSalida;
 	}
 	
-	
+	 
     /**
      * Dada una cadena con una hora y minutos, retorna los minutos.
      * 

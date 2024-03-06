@@ -18,7 +18,7 @@ public class Aeropuerto
     private String nombreCiudad;
     private double latitud;
     private double longitud;
-    private static Set<String> codigosUtilizados =  new HashSet<>();;
+    private static Set<String> codigosUtilizados =  new HashSet<>();
     private static final int RADIO_TERRESTRE = 6371;
     
     
@@ -84,17 +84,14 @@ public class Aeropuerto
      */
     public static int calcularDistancia( Aeropuerto aeropuerto1, Aeropuerto aeropuerto2 )
     {
-        // Convertir los ángulos a radianes para facilitar las operaciones trigonométricas
         double latAeropuerto1 = Math.toRadians( aeropuerto1.getLatitud( ) );
         double lonAeropuerto1 = Math.toRadians( aeropuerto1.getLongitud( ) );
         double latAeropuerto2 = Math.toRadians( aeropuerto2.getLatitud( ) );
         double lonAeropuerto2 = Math.toRadians( aeropuerto2.getLongitud( ) );
 
-        // Calcular la distancia debido a la diferencia de latitud y de longitud
         double deltaX = ( lonAeropuerto2 - lonAeropuerto1 ) * Math.cos( ( latAeropuerto1 + latAeropuerto2 ) / 2 );
         double deltaY = ( latAeropuerto2 - latAeropuerto1 );
 
-        // Calcular la distancia real en kilómetros
         double distancia = Math.sqrt( deltaX * deltaX + deltaY * deltaY ) * RADIO_TERRESTRE;
 
         return ( int )Math.round( distancia );

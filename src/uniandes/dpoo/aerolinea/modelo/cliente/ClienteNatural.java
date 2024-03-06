@@ -15,14 +15,13 @@ public class ClienteNatural extends Cliente {
 	
 	@Override
 	public String getTipoCliente() {
-		// TODO Auto-generated method stub
-		return null;
+		return NATURAL;
 	}
 
 	@Override
 	public String getIdentificador() {
 		// TODO Auto-generated method stub
-		return null;
+		return nombre;
 	}
 
 }
